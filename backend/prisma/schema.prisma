@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("AGENT") // ADMIN, MANAGER, or AGENT
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversations Conversation[]
+  messages      Message[]
+
+  @@map("users")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversations Conversation[]
+
+  @@map("customers")
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+  agentId    String?
+  agent      User?    @relation(fields: [agentId], references: [id])
+  status     String   @default("ACTIVE") // ACTIVE, RESOLVED, or ESCALATED
+  sentiment  String   @default("NEUTRAL") // POSITIVE, NEUTRAL, or NEGATIVE
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  resolvedAt DateTime?
+
+  messages Message[]
+  analytics ConversationAnalytics?
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  content        String
+  sender         String       // CUSTOMER, AGENT, or AI
+  agentId        String?
+  agent          User?        @relation(fields: [agentId], references: [id])
+  aiSuggestion   String?
+  aiConfidence   Float?
+  edited         Boolean      @default(false)
+  timestamp      DateTime     @default(now())
+
+  @@map("messages")
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String
+  tags      String   // Comma-separated tags for SQLite
+  embedding String?  // JSON string for embeddings in SQLite
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model ConversationAnalytics {
+  id                  String       @id @default(cuid())
+  conversationId      String       @unique
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  firstResponseTime   Int?         // in seconds
+  avgResponseTime     Int?         // in seconds
+  totalMessages       Int          @default(0)
+  aiSuggestionsUsed   Int          @default(0)
+  aiSuggestionsTotal  Int          @default(0)
+  manualInterventions Int          @default(0)
+  avgAiConfidence     Float?
+  customerSatisfaction Float?      // 1-5 rating
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@map("conversation_analytics")
+}
+
+model SystemMetrics {
+  id                  String   @id @default(cuid())
+  date                DateTime @unique
+  totalConversations  Int      @default(0)
+  activeConversations Int      @default(0)
+  resolvedConversations Int    @default(0)
+  avgResponseTime     Float?
+  autoResolutionRate  Float?
+  avgAiAccuracy       Float?
+  avgCustomerSat      Float?
+  createdAt           DateTime @default(now())
+
+  @@map("system_metrics")
+}
