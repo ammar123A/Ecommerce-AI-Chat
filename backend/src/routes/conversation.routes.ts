@@ -116,12 +116,31 @@ router.post('/:id/messages', async (req, res) => {
     const { content, sender } = req.body
     const user = (req as any).user
 
+    // Find a real agent user from database (fallback if JWT user doesn't exist)
+    let agentId = null
+    if (sender.toLowerCase() === 'agent') {
+      // Try to find user from JWT
+      const existingUser = await prisma.user.findUnique({
+        where: { id: user.id }
+      })
+      
+      if (existingUser) {
+        agentId = existingUser.id
+      } else {
+        // Fallback to any agent user
+        const anyAgent = await prisma.user.findFirst({
+          where: { role: 'AGENT' }
+        })
+        agentId = anyAgent?.id || null
+      }
+    }
+
     const message = await prisma.message.create({
       data: {
         conversationId: req.params.id,
         content,
         sender: sender.toUpperCase(),
-        agentId: sender.toLowerCase() === 'agent' ? user.id : null,
+        agentId,
         timestamp: new Date()
       }
     })

@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.routes.js'
 import conversationRoutes from './routes/conversation.routes.js'
 import faqRoutes from './routes/faq.routes.js'
 import analyticsRoutes from './routes/analytics.routes.js'
+import aiRoutes from './routes/ai.routes.js'
 
 dotenv.config()
 
@@ -50,6 +51,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/conversations', conversationRoutes)
 app.use('/api/faq', faqRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Error handling
 app.use(errorHandler)
